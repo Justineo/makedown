@@ -27,6 +27,7 @@
           editor.value = content
           answerId = id || null
           syncHeight(editor)
+          focusEnd(editor)
         }
       }, false)
 
@@ -325,12 +326,21 @@
       editor.value = content
       answerId = id || null
       syncHeight(editor)
+      focusEnd(editor)
     } else {
       $('.AnswerForm-editor').attr('data-makedown-answer', '')
       window.postMessage({
         type: 'makedown-query'
       }, '*')
     }
+  }
+
+  function focusEnd (editor) {
+    setTimeout(() => {
+      editor.focus()
+      let { length } = editor.value
+      editor.setSelectionRange(length, length)
+    }, 0)
   }
 
   function json (response) {
