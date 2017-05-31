@@ -1,0 +1,68 @@
+#makedown-editor {
+  width: 100%;
+  box-sizing: border-box;
+  outline: none;
+  border: none;
+  background: #fff;
+  resize: none;
+}
+
+.makedown-answer #makedown {
+  width: 100%;
+}
+
+.makedown-answer #makedown-editor {
+  min-height: 180px;
+  padding: 12px 20px;
+  font: inherit;
+  font-size: 15px;
+}
+
+.makedown-answer #makedown-editor::-webkit-input-placeholder {
+  color: #9fadc7;
+}
+
+.makedown-answer #makedown-editor::-moz-placeholder {
+  color: #9fadc7;
+}
+
+.makedown-answer .AnswerForm-footer--hidden {
+  pointer-events: auto;
+  opacity: 1;
+}
+
+.makedown-answer .AnswerForm-editor .Input {
+  display: none;
+}
+
+.makedown-article #makedown {
+  margin: 10px 0 30px;
+  margin-left: -330px;
+  padding: 0 50% 200px;
+  min-width: 660px;
+}
+
+.makedown-article #makedown-editor {
+  width: 100%;
+  min-height: 300px;
+  line-height: 1.7;
+  font-weight: 400;
+}
+
+.makedown-article #makedown-editor::-webkit-input-placeholder {
+  color: #b3b3b3;
+}
+
+.makedown-article #makedown-editor::-moz-placeholder {
+  color: #b3b3b3;
+}
+
+.makedown-article .entry-content {
+  position: absolute;
+  top: -300%;
+  left: -300%;
+}
+
+.makedown-article .toolbar-holder {
+  display: none;
+}
