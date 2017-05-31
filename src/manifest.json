@@ -3,6 +3,9 @@
   "name": "Makedown",
   "description": "Enable Markdown editing on Zhihu.",
   "version": "0.0.1",
+  "icons": {
+    "128": "icon.png"
+  },
   "permissions": [
     "tabs",
     "https://www.zhihu.com/*",
