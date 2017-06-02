@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Makedown",
   "description": "Enable Markdown editing on Zhihu.",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "icons": {
     "128": "icon.png"
   },
@@ -28,7 +28,6 @@
         "makedown.js"
       ],
       "css": [
-        "at.css",
         "makedown.css"
       ],
       "run_at": "document_start"

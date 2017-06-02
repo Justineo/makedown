@@ -66,3 +66,55 @@
 .makedown-article .toolbar-holder {
   display: none;
 }
+
+.atwho-view {
+  display: none;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 11110 !important;
+}
+
+.atwho-view ul {
+  overflow: hidden;
+  margin: 6px 0;
+  border: 1px solid rgba(0, 0, 0, .05);
+  border-radius: 4px;
+  background: #fff;
+  box-shadow: 0 8px 18px rgba(0,0,0,.08);
+  min-width: 120px;
+}
+
+.atwho-view li {
+  overflow: hidden;
+  padding: 5px 16px;
+  height: 44px;
+  line-height: 44px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  cursor: pointer;
+}
+
+.atwho-view li > * {
+  vertical-align: middle;
+}
+
+.atwho-view li img {
+  margin-right: 8px;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+}
+
+.atwho-view li span {
+  color: #222;
+}
+
+.atwho-view li small {
+  font-size: 70%;
+  color: #999;
+}
+
+.atwho-view .cur {
+  background: #f7f8f9;
+}

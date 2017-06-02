@@ -249,7 +249,7 @@ toMarkdown = function (input, options) {
   }
 
   // Escape potential ol triggers
-  input = input.replace(/(\d+)\. /g, '$1\\. ');
+  // input = input.replace(/(\d+)\. /g, '$1\\. ');
 
   var clone = htmlToDom(input).body,
       nodes = bfsOrder(clone),

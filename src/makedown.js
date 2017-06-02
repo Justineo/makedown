@@ -198,11 +198,11 @@
       limit: 6,
       callbacks: {
         beforeInsert (value, $li) {
-          let name = $li.children('strong').text().trim()
+          let name = $li.children('span').text().trim()
           return `[@${name}](https://www.zhihu.com/people/${userData[name].hash})`
         },
-        tplEval (tpl, { name, id, desc }) {
-          return `<li title="${desc}">${name} <small>${id}</small></li>`
+        tplEval (tpl, { name, id, avatar, desc }) {
+          return `<li title="${desc}"><img src="${avatar}"><span>${name}</span><small>${id}</small></li>`
         },
         remoteFilter (query, callback) {
           if (!query) {
@@ -218,6 +218,7 @@
                 let user = {
                   name: entry[1],
                   id: entry[2],
+                  avatar: entry[3].replace(/_s.jpg$/, '_m.jpg'),
                   hash: entry[4],
                   desc: entry[5]
                 }
@@ -233,7 +234,7 @@
     editor.addEventListener('paste', ({ clipboardData }) => {
       let { files, items } = clipboardData
       let fileItems = [...items].filter(({ type }) => type === 'file')
-      if (!files.length && fileItems.length) {
+      if (!files.length && !fileItems.length) {
         return
       }
       upload(files[0] || fileItems[0].getAsFile(), url => {
@@ -395,6 +396,17 @@
   function convertToMarkdown (html) {
     return prepareGeneratedMarkdown(toMarkdown(prepareLoadedHTML(html), {
       converters: [
+        {
+          filter: 'li',
+          replacement (content, node) {
+            content = content.trim().replace(/\n/gm, '\n  ');
+            let parent = node.parentNode;
+            let index = [...parent.children].indexOf(node) + 1;
+
+            let prefix = parent.nodeName.toLowerCase() === 'ol' ? `{index}. ` : '* ';
+            return prefix + content;
+          }
+        },
         {
           filter: 'pre',
           replacement (content, node) {
