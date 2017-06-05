@@ -9,6 +9,7 @@
     html: true,
     langPrefix: ''
   })
+  md.inline.ruler.push('inline-tex', inlineTeX)
 
   if (!isAnswer() && !isArticle()) {
     return
@@ -399,18 +400,26 @@
         {
           filter: 'li',
           replacement (content, node) {
-            content = content.trim().replace(/\n/gm, '\n  ');
-            let parent = node.parentNode;
-            let index = [...parent.children].indexOf(node) + 1;
+            content = content.trim().replace(/\n/gm, '\n  ')
+            let parent = node.parentNode
+            let index = [...parent.children].indexOf(node) + 1
 
-            let prefix = parent.nodeName.toLowerCase() === 'ol' ? `{index}. ` : '* ';
-            return prefix + content;
+            let prefix = parent.nodeName.toLowerCase() === 'ol' ? `{index}. ` : '* '
+            return prefix + content
           }
         },
         {
           filter: 'pre',
           replacement (content, node) {
             return '\n\n```' + (node.lang === 'text' ? '' : node.lang) + '\n' + node.textContent.trim() + '\n```\n\n'
+          }
+        },
+        {
+          filter (node) {
+            return node.matches('img[eeimg="1"]')
+          },
+          replacement (content, node) {
+            return ` $${node.alt}$ `
           }
         }
       ]
@@ -487,6 +496,11 @@
       a.parentNode.insertBefore(document.createTextNode(' '), a.nextSibling)
     })
 
+    // convert LaTex expression imgs
+    Array.from(wrapper.querySelectorAll('img[src^="https://www.zhihu.com/equation?tex="]')).forEach(img => {
+      img.setAttribute('eeimg', '1')
+    })
+
     return wrapper.innerHTML
       .replace(/>\n+</g, '><') // remove unwanted line breaks
       .trim()
@@ -546,5 +560,55 @@
       }
     }
     return null
+  }
+
+  function inlineTeX (state, silent) {
+    let pos = state.pos
+    let ch = state.src.charCodeAt(pos)
+
+    if (ch !== 36) {
+      return false
+    }
+
+    let start = pos
+    pos++
+    let max = state.posMax
+
+    while (pos < max && state.src.charCodeAt(pos) === 36) {
+      pos++
+    }
+
+    let marker = state.src.slice(start, pos)
+
+    let matchStart = matchEnd = pos
+
+    while ((matchStart = state.src.indexOf('$', matchEnd)) !== -1) {
+      matchEnd = matchStart + 1
+
+      while (matchEnd < max && state.src.charCodeAt(matchEnd) === 36) {
+        matchEnd++
+      }
+
+      if (matchEnd - matchStart === marker.length) {
+        if (!silent) {
+          let tex = state.src.slice(pos, matchStart).replace(/[ \n]+/g, ' ').trim()
+          state.push({
+            type: 'image',
+            src: `https://www.zhihu.com/equation?tex=${encodeURIComponent(tex)}`,
+            alt: tex,
+            block: false,
+            level: state.level
+          })
+        }
+        state.pos = matchEnd
+        return true
+      }
+    }
+
+    if (!silent) {
+      state.pending += marker
+    }
+    state.pos += marker.length
+    return true
   }
 })()
