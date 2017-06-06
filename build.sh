@@ -1,1 +1,3 @@
-zip -r makedown.zip src
+cd src
+ls | zip -@ ../makedown.zip
+cd ..

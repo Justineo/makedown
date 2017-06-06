@@ -411,7 +411,16 @@
         {
           filter: 'pre',
           replacement (content, node) {
-            return '\n\n```' + (node.lang === 'text' ? '' : node.lang) + '\n' + node.textContent.trim() + '\n```\n\n'
+            let code = node.textContent.trim()
+            let fencesInside = code.match(/`{3,}/g)
+            let fence = '```'
+            if (fencesInside) {
+              fence = '`'.repeat(fencesInside.reduce((acc, cur) => {
+                return Math.max(acc.length, cur.length)
+              }) + 1)
+            }
+
+            return `\n\n${fence}${node.lang === 'text' ? '' : node.lang}\n${code}\n${fence}\n\n`
           }
         },
         {
