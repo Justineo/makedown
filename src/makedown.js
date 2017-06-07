@@ -404,7 +404,7 @@
             let parent = node.parentNode
             let index = [...parent.children].indexOf(node) + 1
 
-            let prefix = parent.nodeName.toLowerCase() === 'ol' ? `{index}. ` : '* '
+            let prefix = parent.nodeName.toLowerCase() === 'ol' ? `${index}. ` : '* '
             return prefix + content
           }
         },
