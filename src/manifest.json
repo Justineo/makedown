@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Makedown",
   "description": "Enable Markdown editing on Zhihu.",
-  "version": "0.0.4",
+  "version": "0.0.7",
   "icons": {
     "128": "icon.png"
   },

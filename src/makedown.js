@@ -1,10 +1,14 @@
 (function () {
   const API_ENDPOINT = 'https://www.zhihu.com/api/v4'
+  const EXTERNAL_URL_PATTERN = /https?:\/\/link\.zhihu\.com\/\?target=/
+  const VIDEO_URL_PATTERN = /https?:\/\/www\.zhihu\.com\/video\/(\d+)/
+  const USER_URL_PATTERN = /https:\/\/www\.zhihu\.com\/people\/([\da-zA-Z]+)/
 
   // global states
   let editor
   let answerId
   let userData = {}
+  let videoData = {}
   let md = new Remarkable({
     html: true,
     langPrefix: ''
@@ -22,13 +26,15 @@
           return
         }
 
-        if (data.type && (data.type == 'makedown-data')) {
+        if (data.type && data.type === 'makedown-answer') {
           let { content, id } = data.payload
           content = convertToMarkdown(content)
           editor.value = content
           answerId = id || null
           syncHeight(editor)
           focusEnd(editor)
+        } else if (data.type && data.type === 'makedown-meta') {
+          submitAnswer(data.payload)
         }
       }, false)
 
@@ -54,14 +60,30 @@
               if (!instance) {
                 return
               }
-              let { answer } = instance.props
-              content = answer.editableContent
-              id = answer.id
 
-              window.postMessage({
-                type: 'makedown-data',
-                payload: { content, id }
-              }, '*')
+              if (!data.payload || !data.payload.meta) {
+                let { answer } = instance.props
+                content = answer ? answer.editableContent : ''
+                id = answer ? answer.id : null
+                window.postMessage({
+                  type: 'makedown-answer',
+                  payload: { content, id }
+                }, '*')
+              } else if (data.payload && data.payload.meta) {
+                let node = document.querySelector('[data-makedown-answer]').parentNode
+                let instance = findReactComponent(node)
+                if (!instance) {
+                  return
+                }
+                let { commentPermission, reshipmentSettings } = instance.state
+                window.postMessage({
+                  type: 'makedown-meta',
+                  payload: {
+                    reshipmentSettings,
+                    commentPermission
+                  }
+                }, '*')
+              }
             }
           })
         })()`
@@ -122,7 +144,7 @@
     /**
      * Hijacking DOM events
      */
-    submitButton.addEventListener('click', submitAnswer, true)
+    submitButton.addEventListener('click', handleSubmitAnswer, true)
 
     let $editor = $(editor)
     if (!$editor.parents('.QuestionAnswers-answerAdd').length) {
@@ -232,28 +254,39 @@
       }
     })
 
-    editor.addEventListener('paste', ({ clipboardData }) => {
-      let { files, items } = clipboardData
-      let fileItems = [...items].filter(({ type }) => type === 'file')
-      if (!files.length && !fileItems.length) {
-        return
-      }
-      upload(files[0] || fileItems[0].getAsFile(), url => {
-        let text = `![](${url})`
-        $(editor).selection('replace', {
-          text,
-          caret: 'keep'
-        })
-      })
-    })
+    editor.addEventListener('drop', handleTransfer)
+    editor.addEventListener('paste', handleTransfer)
 
     return editor
   }
 
-  function upload (file, callback) {
+  function handleTransfer (e) {
+    let dataTransfer = e.dataTransfer || e.clipboardData
+    if (!dataTransfer) {
+      return
+    }
+    let { files, items } = dataTransfer
+    let fileItems = [...items].filter(({ kind }) => kind === 'file')
+    if (!files.length && !fileItems.length) {
+      return
+    }
+    let file = files[0] || fileItems[0].getAsFile()
     if (!file) {
       return
     }
+
+    upload(file, url => {
+      let text = `![](${url})`
+      $(editor).selection('replace', {
+        text,
+        caret: 'keep'
+      })
+    })
+
+    e.preventDefault()
+  }
+
+  function upload (file, callback) {
     let field
     let url
     if (isArticle()) {
@@ -295,11 +328,18 @@
     editor.style.height = `${editor.scrollHeight}px`
   }
 
-  function submitAnswer (e) {
+  function handleSubmitAnswer (e) {
     if (!editor) {
       return
     }
 
+    queryMeta();
+
+    e.preventDefault()
+    e.stopPropagation()
+  }
+
+  function submitAnswer (meta) {
     let answerId = getAnswerId()
     let questionId = getQuestionId()
     let content = convertToHTML(editor.value)
@@ -307,11 +347,8 @@
     if (answerId) {
       saveAnswer(answerId, content)
     } else if (questionId) {
-      createAnswer(questionId, content)
+      createAnswer(questionId, content, meta)
     }
-
-    e.preventDefault()
-    e.stopPropagation()
   }
 
   function queryAnswer () {
@@ -323,16 +360,41 @@
         return
       }
       let { answer } = instance.props
-      content = convertToMarkdown(answer.editableContent)
-      answerId = answer.id
-      editor.value = content
-      answerId = id || null
+      if (answer) {
+        content = convertToMarkdown(answer.editableContent)
+        answerId = answer.id
+        editor.value = content
+      } else {
+        content = ''
+        answerId = null
+      }
       syncHeight(editor)
       focusEnd(editor)
     } else {
       $('.AnswerForm-editor').attr('data-makedown-answer', '')
       window.postMessage({
         type: 'makedown-query'
+      }, '*')
+    }
+  }
+
+  function queryMeta (submit) {
+    if (window.wrappedJSObject) {
+      let doc = window.wrappedJSObject.document
+      let node = doc.querySelector('.AnswerForm-editor').parentNode
+      let instance = findReactComponent(node)
+      if (!instance) {
+        return
+      }
+      let { commentPermission, reshipmentSettings } = instance.state
+      submitAnswer({ commentPermission, reshipmentSettings })
+    } else {
+      $('.AnswerForm-editor').attr('data-makedown-answer', '')
+      window.postMessage({
+        type: 'makedown-query',
+        payload: {
+          meta: true
+        }
       }, '*')
     }
   }
@@ -349,7 +411,7 @@
     return response.json()
   }
 
-  function createAnswer (questionId, content) {
+  function createAnswer (questionId, content, meta) {
     let url = `${API_ENDPOINT}/questions/${questionId}/answers`
     fetch(url, {
         method: 'POST',
@@ -359,7 +421,8 @@
         credentials: 'include',
         body: JSON.stringify({
           content,
-          reshipment_settings: getReshipmentSettings ()
+          reshipment_settings: meta.reshipmentSettings,
+          comment_permission: meta.commentPermission
         })
       })
       .then(json)
@@ -455,8 +518,16 @@
     })
 
     // remove Zhihu redirect for links
+    // record video links
     Array.from(wrapper.getElementsByTagName('a')).forEach(a => {
-      a.href = decodeURIComponent(a.href.replace(/https?:\/\/link\.zhihu\.com\/\?target=/, ''))
+      if (a.href.match(/https?:\/\/link\.zhihu\.com\/\?target=/)) {
+        a.href = decodeURIComponent(a.href.replace(EXTERNAL_URL_PATTERN, ''))
+      }
+
+      let match = a.href.match(VIDEO_URL_PATTERN)
+      if (match) {
+        videoData[match[1]] = Object.assign({}, a.dataset)
+      }
     })
 
     return wrapper.innerHTML
@@ -494,15 +565,21 @@
     // convert @ mentions
     Array.from(wrapper.querySelectorAll('a')).forEach(a => {
       let href = a.href
-      let [match, hash] = href.match(/https:\/\/www\.zhihu\.com\/people\/([\da-zA-Z]+)/) || []
-      if (!match) {
-        return
+      let [userMatch, hash] = href.match(USER_URL_PATTERN) || []
+      if (userMatch) {
+        a.className = 'member_mention'
+        a.dataset.hash = hash
+        a.href = `/people/${hash}`
+        a.parentNode.insertBefore(document.createTextNode(' '), a)
+        a.parentNode.insertBefore(document.createTextNode(' '), a.nextSibling)
       }
-      a.className = 'member_mention'
-      a.dataset.hash = hash
-      a.href = `/people/${hash}`
-      a.parentNode.insertBefore(document.createTextNode(' '), a)
-      a.parentNode.insertBefore(document.createTextNode(' '), a.nextSibling)
+
+      let [videoMatch, id] = href.match(VIDEO_URL_PATTERN) || []
+      if (videoMatch) {
+        let video = videoData[id]
+        a.className = 'video-link'
+        Object.assign(a.dataset, video)
+      }
     })
 
     // convert LaTex expression imgs
@@ -530,16 +607,6 @@
       }
     })
     return textNodes
-  }
-
-  const reshipmentMap = {
-    '允许付费转载': 'need_payment',
-    '允许规范转载': 'allowed',
-    '禁止转载': 'disallowed'
-  }
-  function getReshipmentSettings () {
-    let text = document.querySelector('.AnswerForm-footerRight .Popover button').textContent.trim()
-    return reshipmentMap[text]
   }
 
   function getQuestionId () {
