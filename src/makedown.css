@@ -42,6 +42,16 @@
   font-weight: 400;
 }
 
+.makedown-article-react #makedown-editor {
+  flex: 1;
+  margin: 0;
+  padding: 20px 0 200px;
+  line-height: 24px;
+  font-weight: inherit;
+  font-family: inherit;
+  font-size: 16px;
+}
+
 .makedown-article #makedown-editor:disabled {
   opacity: .6;
 }
@@ -54,7 +64,8 @@
   color: #b3b3b3;
 }
 
-.makedown-article .entry-content {
+.makedown-article .entry-content,
+.makedown-article .PostEditor .Input {
   position: absolute;
   top: -300%;
   left: -300%;

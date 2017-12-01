@@ -2,7 +2,7 @@
   "manifest_version": 2,
   "name": "Makedown",
   "description": "Enable Markdown editing on Zhihu.",
-  "version": "0.0.7",
+  "version": "0.1.2",
   "icons": {
     "128": "icon.png"
   },
@@ -15,8 +15,7 @@
     {
       "matches": [
         "https://www.zhihu.com/question/*",
-        "https://zhuanlan.zhihu.com/p/*",
-        "https://zhuanlan.zhihu.com/write"
+        "https://zhuanlan.zhihu.com/*"
       ],
       "js": [
         "jquery.js",
